@@ -1,0 +1,102 @@
+---
+title: "Practical Machine Learning A1"
+author: "Mohammad Ateya"
+date: "3/7/2017"
+output: 
+  html_document:
+    keep_md: true
+---
+#Background
+
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement – a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: http://groupware.les.inf.puc-rio.br/har (see the section on the Weight Lifting Exercise Dataset).
+
+#Data
+
+The training data for this project are available here:
+
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv
+
+The test data are available here:
+
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
+
+
+The data for this project come from this source: http://groupware.les.inf.puc-rio.br/har. If you use the document you create for this class for any purpose please cite them as they have been very generous in allowing their data to be used for this kind of assignment.
+
+#Project Goals
+
+The goal of this project is to predict the manner in which they did the exercise. This is the "classe" variable in the training set. 
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#Model Build:
+- Necessary libraries were loaded first 
+```{r}
+library(caret)
+library(tidyverse)
+```
+
+- Training and testing data were downloaded and read into data frames
+
+```{r}
+download.file("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv",destfile = "pml-training.csv")
+download.file("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv",destfile = "pml-testing.csv")
+pmlTraining <- read.csv("pml-training.csv")
+testing <- read.csv("pml-testing.csv")
+```
+
+- Training dataset was sliced into a training subset (60% of observations) and validation subset (40% of observations) data frames. The validation subset is to be used for cross validation 
+
+```{r}
+set.seed(3334)
+inTrain <- createDataPartition(y = pmlTraining$classe, p=0.6, list = FALSE)
+training <- pmlTraining[inTrain,]
+validation <- pmlTraining[-inTrain,]
+```
+
+- Variables with limited variance ,i.e. near zero variance were removed from the predictors
+```{r}
+nsv <- nearZeroVar(training,saveMetrics = TRUE)
+training2 <- training[,row.names(nsv[nsv$nzv == "FALSE",])]
+```
+
+- Removed variables with more than 90% missing values
+```{r}
+training3 <- training2[,colSums(!is.na(training2)) > (nrow(training2)*0.9)]
+## print names of variables used as predictors and the outcome variable "classe"
+names(training3)
+```
+
+- Remove un-used variables from the validation subset
+```{r}
+validation2 <- validation[,colnames(training3)]
+```
+
+- Used diffrent algorithms to build prediction models: trees, random forests, and tree bagging.
+- Each model was used to predict the classe variable in the validation subset
+- Confusion matrix function from the caret package was used to calculate accuracy of the model
+- Random forest has the highest accuracy (lowest out of sample error rate).
+
+```{r}
+
+### All the code below, except that for the random forest model, was commented to faciliate generating the R Markdown file 
+
+#Fitting a tree model
+# modelfit1 <- rpart(classe ~ .,method = "class", data = training3[,-(1:6)])
+# predictions1 <- predict(modelfit1,validation2[,-(1:6)],type = "class")
+# confusionMatrix(predictions1,validation2$classe)
+
+#Fitting a bagging model
+# modelfit2 <- train(classe ~ .,method = "treebag", data = training3[,-(1:6)])
+# predictions2 <- predict(modelfit2,validation2[,-(1:6)])
+# confusionMatrix(predictions2,validation2$classe)
+
+# Fitting Random Forest model
+modelfit3 <- randomForest::randomForest(classe ~ .,method = "treebag", 
+                                        data = training3[,-(1:6)],prox=TRUE)
+predictions3 <- predict(modelfit3,validation2[,-(1:6)])
+confusionMatrix(predictions3,validation2$classe)
+```
+Out of sample error rate for random forest model is expected to be 0.69%
