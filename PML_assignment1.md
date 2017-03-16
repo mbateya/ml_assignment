@@ -185,3 +185,6 @@ confusionMatrix(predictions3,validation2$classe)
 ## Balanced Accuracy      0.9993   0.9953   0.9923   0.9908   0.9982
 ```
 Out of sample error rate for random forest model is expected to be 0.69%
+
+Predicting classe for the test set
+predict(modelfit3,testing)

@@ -100,3 +100,6 @@ predictions3 <- predict(modelfit3,validation2[,-(1:6)])
 confusionMatrix(predictions3,validation2$classe)
 ```
 Out of sample error rate for random forest model is expected to be 0.69%
+
+Predicting classe for the test set
+predict(modelfit3,testing)
